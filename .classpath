@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="p2-201910-cliente/src"/>
+	<classpathentry kind="src" path="p2-201910-cliente/test"/>
+	<classpathentry kind="lib" path="p2-201910-cliente/lib/commons-lang3-3.8.1.jar"/>
+	<classpathentry kind="lib" path="p2-201910-cliente/lib/opencsv-4.4.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
