@@ -13,6 +13,7 @@ import com.opencsv.CSVReaderBuilder;
 import model.data_structures.IQueue;
 import model.data_structures.MaxPQ;
 import model.data_structures.Queue;
+import model.data_structures.RedBlackBST;
 import model.data_structures.SeparateChainingHashST;
 import model.vo.EstadisticaInfracciones;
 import model.vo.EstadisticasCargaInfracciones;
@@ -33,6 +34,9 @@ public class MovingViolationsManager {
 	SeparateChainingHashST<Integer, Queue<VOMovingViolations>> porViolationCode;
 	
 	MaxPQ<Integer> indices;
+	
+	RedBlackBST<String, Queue<VOMovingViolations>> datosPorCoordenadas;
+	
 	private MovingViolationsManagerView view ;
 	
 	private String[] listaMes;
@@ -42,9 +46,10 @@ public class MovingViolationsManager {
 	public MovingViolationsManager()
 	{
 		view = new MovingViolationsManagerView();
-		indices= new MaxPQ();
-		datosPorViolationCode = new SeparateChainingHashST();
-		porViolationCode = new SeparateChainingHashST();
+		datosPorCoordenadas= new RedBlackBST<>();
+		indices= new MaxPQ<>();
+		datosPorViolationCode = new SeparateChainingHashST<>();
+		porViolationCode = new SeparateChainingHashST<>();
 		listaMes = new String[]{"January" , "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
 		//TODO inicializar los atributos
 	}
@@ -85,11 +90,13 @@ public class MovingViolationsManager {
 							Queue<VOMovingViolations> xd = datosPorViolationCode.get(info.get(j)[15]);
 							xd.enqueue(infraccion);
 							datosPorViolationCode.put(info.get(j)[15], xd);
+							porViolationCode.put(xd.size(), xd);
 						}
 						else{
 							Queue<VOMovingViolations> xd = new Queue();
 							xd.enqueue(infraccion);
 							datosPorViolationCode.put(info.get(j)[15], xd);
+							porViolationCode.put(xd.size(), xd);
 						}
 						
 					}
@@ -174,15 +181,14 @@ public class MovingViolationsManager {
 	public IQueue<InfraccionesViolationCode> rankingNViolationCodes(int N)
 	{
 		Queue<InfraccionesViolationCode> datacos=new Queue();
-		String[] info1= new String[N];
-		Queue<VOMovingViolations>[] info2= new Queue[N];
+		
 		Iterable<Integer> valores=porViolationCode.keys();
 		Integer este = valores.iterator().next();
 		for(int i=0;i<porViolationCode.size();i++){
 			indices.insert(este);
 			este = valores.iterator().next();
 		}
-		for(int i=0;i<N;i++){
+		for(int i=0;i<N&&este!=null;i++){
 			int xd =indices.delMax();
 			VOMovingViolations esto= porViolationCode.get(xd).dequeue();
 			String vCode = esto.getViolationCode();
@@ -190,10 +196,32 @@ public class MovingViolationsManager {
 			datacos.enqueue(new InfraccionesViolationCode(vCode, porViolationCode.get(xd)));
 		}
 		
-		return null;		
+		return datacos;		
 	}
 
-	
+	public void basePorCoordenadas(){
+		String llave=datosPorViolationCode.keys().iterator().next();
+		for(int i=0;i<datosPorViolationCode.size()&&llave!=null;i++){
+			Queue<VOMovingViolations> info1= datosPorViolationCode.get(llave);
+			for(int j=0;j<info1.size();j++){
+				VOMovingViolations actual= info1.dequeue();
+				String nuevaLlave= actual.getKeyCoord();
+				if(datosPorCoordenadas.contains(nuevaLlave)){
+					Queue<VOMovingViolations> nuevaInfo= datosPorCoordenadas.get(nuevaLlave);
+					nuevaInfo.enqueue(actual);
+					datosPorCoordenadas.delete(nuevaLlave);
+					datosPorCoordenadas.put(nuevaLlave, nuevaInfo);
+				}
+				else{
+					Queue<VOMovingViolations> nuevaInfo=new Queue<>();
+					nuevaInfo.enqueue(actual);
+					
+					datosPorCoordenadas.put(nuevaLlave, nuevaInfo);
+				}
+			}
+		}
+		
+	}
 	/**
 	  * Requerimiento 2B: Consultar las  infracciones  por  
 	  * Localización  Geográfica  (Xcoord, Ycoord) en Arbol.
@@ -201,10 +229,15 @@ public class MovingViolationsManager {
 	  *			double yCoord : Coordenada Y de la localizacion de la infracción
 	  * @return Objeto InfraccionesLocalizacion
 	  */
+	
 	public InfraccionesLocalizacion consultarPorLocalizacionArbol(double xCoord, double yCoord)
 	{
-		// TODO completar
-		return null;		
+		// EL requerimiento de ordenar en un arbol fue resuelto en el metodo basePorCoordenadas.
+		
+		Queue<VOMovingViolations> porCoordenada = datosPorCoordenadas.get(xCoord+"-"+yCoord);
+		VOMovingViolations actual= porCoordenada.dequeue();
+		porCoordenada.enqueue(actual);
+				return new InfraccionesLocalizacion(xCoord, yCoord, actual.getLocation(), Integer.parseInt(actual.getAddressId()), Integer.parseInt(actual.getStreetSegId()), porCoordenada);
 	}
 	
 	/**
@@ -216,6 +249,7 @@ public class MovingViolationsManager {
 	  */
 	public IQueue<InfraccionesFechaHora> consultarFranjasAcumuladoEnRango(double valorInicial, double valorFinal)
 	{
+		
 		// TODO completar
 		return null;		
 	}

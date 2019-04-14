@@ -96,4 +96,7 @@ public class VOMovingViolations {
 	public String getAddressId() {
 		return addresId;
 	}
+    public String getKeyCoord(){
+    	return xCoord+"-"+yCoord;
+    }
 }
