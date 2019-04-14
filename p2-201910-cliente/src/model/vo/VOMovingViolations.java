@@ -84,6 +84,10 @@ public class VOMovingViolations {
 		// TODO Auto-generated method stub
 		return violationDesc;
 	}
+	public String  getViolationCode() {
+		// TODO Auto-generated method stub
+		return violationCode;
+	}
 	
 	public String getStreetSegId() {
 		return streetSegid;

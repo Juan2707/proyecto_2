@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.FileReader;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Iterator;
 import java.util.List;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 
 import model.data_structures.IQueue;
+import model.data_structures.MaxPQ;
+import model.data_structures.Queue;
 import model.data_structures.SeparateChainingHashST;
 import model.vo.EstadisticaInfracciones;
 import model.vo.EstadisticasCargaInfracciones;
@@ -25,8 +28,11 @@ import view.MovingViolationsManagerView;
 public class MovingViolationsManager {
 
 	//TODO Definir atributos necesarios
-	SeparateChainingHashST<String, VOMovingViolations> datos;
+	SeparateChainingHashST<String, Queue<VOMovingViolations>> datosPorViolationCode;
 	
+	SeparateChainingHashST<Integer, Queue<VOMovingViolations>> porViolationCode;
+	
+	MaxPQ<Integer> indices;
 	private MovingViolationsManagerView view ;
 	
 	private String[] listaMes;
@@ -36,9 +42,9 @@ public class MovingViolationsManager {
 	public MovingViolationsManager()
 	{
 		view = new MovingViolationsManagerView();
-		
-		datos = new SeparateChainingHashST();
-		
+		indices= new MaxPQ();
+		datosPorViolationCode = new SeparateChainingHashST();
+		porViolationCode = new SeparateChainingHashST();
 		listaMes = new String[]{"January" , "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
 		//TODO inicializar los atributos
 	}
@@ -75,11 +81,32 @@ public class MovingViolationsManager {
 					
 					if(info.get(j).length>17){
 						VOMovingViolations infraccion = new VOMovingViolations(info.get(j)[0], info.get(j)[1], info.get(j)[2], info.get(j)[3], info.get(j)[4], info.get(j)[5], info.get(j)[6], info.get(j)[7], info.get(j)[8], info.get(j)[9], info.get(j)[10], info.get(j)[11], info.get(j)[12], info.get(j)[14], info.get(j)[15], info.get(j)[16], info.get(j)[17]);
-						datos.put(info.get(j)[14], infraccion);
+						if(datosPorViolationCode.get(info.get(j)[15])!=null){
+							Queue<VOMovingViolations> xd = datosPorViolationCode.get(info.get(j)[15]);
+							xd.enqueue(infraccion);
+							datosPorViolationCode.put(info.get(j)[15], xd);
+						}
+						else{
+							Queue<VOMovingViolations> xd = new Queue();
+							xd.enqueue(infraccion);
+							datosPorViolationCode.put(info.get(j)[15], xd);
+						}
+						
 					}
 					else{
 						VOMovingViolations infraccion = new VOMovingViolations(info.get(j)[0], info.get(j)[1], info.get(j)[2], info.get(j)[3], info.get(j)[4], info.get(j)[5], info.get(j)[6], info.get(j)[7], info.get(j)[8], info.get(j)[9], info.get(j)[10], info.get(j)[11], info.get(j)[12], info.get(j)[13], info.get(j)[14], info.get(j)[15], info.get(j)[16]);
-					datos.put(info.get(j)[14], infraccion);
+						if(datosPorViolationCode.get(info.get(j)[15])!=null){
+							Queue<VOMovingViolations> xd = datosPorViolationCode.get(info.get(j)[15]);
+							xd.enqueue(infraccion);
+							datosPorViolationCode.put(info.get(j)[14], xd);
+							porViolationCode.put(xd.size(), xd);
+						}
+						else{
+							Queue<VOMovingViolations> xd = new Queue();
+							xd.enqueue(infraccion);
+							datosPorViolationCode.put(info.get(j)[14], xd);
+							porViolationCode.put(xd.size(), xd);
+						}
 					}
 					carga2++;
 					//cargar
@@ -146,6 +173,22 @@ public class MovingViolationsManager {
 	  */
 	public IQueue<InfraccionesViolationCode> rankingNViolationCodes(int N)
 	{
+		Queue<InfraccionesViolationCode> datacos=new Queue();
+		String[] info1= new String[N];
+		Queue<VOMovingViolations>[] info2= new Queue[N];
+		Iterable<Integer> valores=porViolationCode.keys();
+		Integer este = valores.iterator().next();
+		for(int i=0;i<porViolationCode.size();i++){
+			indices.insert(este);
+			este = valores.iterator().next();
+		}
+		for(int i=0;i<N;i++){
+			int xd =indices.delMax();
+			VOMovingViolations esto= porViolationCode.get(xd).dequeue();
+			String vCode = esto.getViolationCode();
+			porViolationCode.get(xd).enqueue(esto);
+			datacos.enqueue(new InfraccionesViolationCode(vCode, porViolationCode.get(xd)));
+		}
 		
 		return null;		
 	}
