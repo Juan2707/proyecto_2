@@ -37,6 +37,8 @@ public class MovingViolationsManager {
 	
 	RedBlackBST<String, Queue<VOMovingViolations>> datosPorCoordenadas;
 	
+	RedBlackBST<Integer,  Queue<VOMovingViolations>> datosPorAddresId;
+	
 	private MovingViolationsManagerView view ;
 	
 	private String[] listaMes;
@@ -52,6 +54,7 @@ public class MovingViolationsManager {
 		porViolationCode = new SeparateChainingHashST<>();
 		listaMes = new String[]{"January" , "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
 		//TODO inicializar los atributos
+		
 	}
 	
 	/**
@@ -76,14 +79,14 @@ public class MovingViolationsManager {
 		int indicador=0;
 		try{
 			for(int f = limInf ; f < limSup ; f++){
-				view.printMessage(listaMes[f]);
+				view.printMessage("Se esta cargando el mes número "+f);
 				dataFile = "." + File.separator + "data" + File.separator + "Moving_Violations_Issued_in_" + listaMes[f] + "_2018.csv";
 				FileReader n1 = new FileReader(dataFile);
 				CSVReader n2 = new CSVReaderBuilder(n1).withSkipLines(1).build();
 				List <String[]> info = n2.readAll();
 				int carga2=0;
 				for(int j = 0 ; j < info.size() ; j++){
-					
+					view.printMessage("infraccion n "+j);
 					if(info.get(j).length>17){
 						VOMovingViolations infraccion = new VOMovingViolations(info.get(j)[0], info.get(j)[1], info.get(j)[2], info.get(j)[3], info.get(j)[4], info.get(j)[5], info.get(j)[6], info.get(j)[7], info.get(j)[8], info.get(j)[9], info.get(j)[10], info.get(j)[11], info.get(j)[12], info.get(j)[14], info.get(j)[15], info.get(j)[16], info.get(j)[17]);
 						if(datosPorViolationCode.get(info.get(j)[15])!=null){
@@ -127,11 +130,14 @@ public class MovingViolationsManager {
 		}
 		catch (Exception e)
 		{
-			// TODO: handle exception
-			e.printStackTrace();
+			// TODO: handle exception			e.printStackTrace();
+			System.out.println("Falló");
 		}
+		view.printMessage("Se cargo exitosmente");
 		
 		EstadisticasCargaInfracciones esto=new EstadisticasCargaInfracciones(total,6,numPorMeses);
+		basePorAddressId();
+		basePorCoordenadas();
 		return esto;
 	}
 
@@ -222,6 +228,29 @@ public class MovingViolationsManager {
 		}
 		
 	}
+	
+	public void basePorAddressId(){
+		String llave = datosPorViolationCode.keys().iterator().next();
+		for(int i=0;i<datosPorViolationCode.size()&&llave!=null;i++){
+			Queue<VOMovingViolations> info1= datosPorViolationCode.get(llave);
+			for(int j=0;j<info1.size();i++){
+				VOMovingViolations actual= info1.dequeue();
+				int nuevaLlave= Integer.parseInt(actual.getAddressId());
+				if(datosPorAddresId.contains(nuevaLlave)){
+					Queue<VOMovingViolations> nuevaInfo= datosPorAddresId.get(nuevaLlave);
+					nuevaInfo.enqueue(actual);
+					datosPorAddresId.delete(nuevaLlave);
+					datosPorAddresId.put(nuevaLlave, nuevaInfo);
+				}
+				else{
+					Queue<VOMovingViolations> nuevaInfo=new Queue<>();
+					nuevaInfo.enqueue(actual);
+					
+					datosPorAddresId.put(nuevaLlave, nuevaInfo);
+				}
+			}
+		}
+	}
 	/**
 	  * Requerimiento 2B: Consultar las  infracciones  por  
 	  * Localización  Geográfica  (Xcoord, Ycoord) en Arbol.
@@ -254,6 +283,7 @@ public class MovingViolationsManager {
 		return null;		
 	}
 	
+	
 	/**
 	  * Requerimiento 1C: Obtener  la información de  una  addressId dada
 	  * @param  int addressID: Localización de la consulta.
@@ -261,8 +291,17 @@ public class MovingViolationsManager {
 	  */
 	public InfraccionesLocalizacion consultarPorAddressId(int addressID)
 	{
-		// TODO completar
-		return null;		
+		//Se usa la base de datos que se cargo en basePorAddresId()
+		InfraccionesLocalizacion retorno=null;
+		if(datosPorAddresId.contains(addressID)){
+			Queue<VOMovingViolations> lista= datosPorAddresId.get(addressID);
+			VOMovingViolations muestra= lista.dequeue();
+			lista.enqueue(muestra);
+			retorno = new InfraccionesLocalizacion(muestra.getXCoord(), muestra.getYCoord(), muestra.getLocation(), addressID, Integer.parseInt(muestra.getStreetSegId()), lista);
+		}
+		//Se usara un arbol rojo negro con key = addresId y value = lista con los VOMovingViolations que contienen esete AddresId como estructura de datos para facilitar la busqueda.
+		
+		return retorno;		
 	}
 	
 	/**

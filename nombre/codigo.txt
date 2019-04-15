@@ -1,0 +1,50 @@
+	@Override
+	public ILinkedList<VOMovingViolations> load(int semestre)
+	{
+int inicio;
+int fin;
+if(semestre == 1)
+ inicio =1; fin = 7;
+else
+  inicio = 7; fin=13;
+
+			for(int j=inicio; j< fin; j++){
+                              //Cada archivo está guardado con el número del mes en vez de su nombre.
+
+				pth = "./data/Moving_Violations_Issued_in_"+ Integer.toString(j)+"_2018.csv";
+
+				int cont= 0;
+
+				Path myPath = Paths.get(pth);
+				try (BufferedReader br = Files.newBufferedReader(myPath)){
+
+
+					HeaderColumnNameMappingStrategy<VOMovingViolations> strategy = new HeaderColumnNameMappingStrategy<>();
+					strategy.setType(VOMovingViolations.class);
+					CsvToBean csvToB = new CsvToBeanBuilder(br).withType(VOMovingViolations.class).withMappingStrategy(strategy).withIgnoreLeadingWhiteSpace(true).build();
+
+
+					for(Iterator<VOMovingViolations> i = csvToB.parse().iterator();i.hasNext(); ){
+
+						lista.addAtEnd(i.next());
+						cont++;
+					}
+					rta = rta + "El número de infracciones en el mes número " + Integer.toString(j) + " es de " + Integer.toString(cont) + "\n";
+					cont0+= cont;
+
+
+				}
+
+				catch (FileNotFoundException e1) {
+
+				} 
+				catch (IOException e) {
+
+				}			
+			}
+
+			System.out.print("\n" + rta);
+			System.out.print("El número total de datos leídos es: " + Integer.toString(cont0));
+
+		return lista;
+	}

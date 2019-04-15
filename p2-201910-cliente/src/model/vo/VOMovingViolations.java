@@ -99,4 +99,10 @@ public class VOMovingViolations {
     public String getKeyCoord(){
     	return xCoord+"-"+yCoord;
     }
+    public String getXCoord(){
+    	return xCoord;
+    }
+    public String getYCoord(){
+    	return yCoord;
+    }
 }
